@@ -1,0 +1,14 @@
+{
+  "checkpoint": "/home/hunt/MyProjects/Fuckstone/LF-VSN-main/experiments/train_LF-VSN_1video_proto/models/19000_G.pth",
+  "num_samples": 200,
+  "psnr_cover": 22.619695247129226,
+  "psnr_secret": [
+    22.57366741720679
+  ],
+  "psnr_stego": 22.541759061078288,
+  "ssim_cover": 0.7102856086052545,
+  "ssim_secret": [
+    0.7068570306055024
+  ],
+  "ssim_stego": 0.6857194127603549
+}

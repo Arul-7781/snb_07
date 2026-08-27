@@ -1,0 +1,16 @@
+{
+  "run_dir": "/home/hunt/MyProjects/Fuckstone/LF-VSN-main/code/results/app_demo_runs/20260322_172119_0c26cd",
+  "device": "cuda",
+  "option_path": "/home/hunt/MyProjects/Fuckstone/LF-VSN-main/code/options/train/train_LF-VSN_1video_proto.yml",
+  "checkpoint_path": "/home/hunt/MyProjects/Fuckstone/LF-VSN-main/experiments/train_LF-VSN_1video_proto/models/latest_G.pth",
+  "preprocess": {
+    "input_frames": 835,
+    "used_frames": 835,
+    "target_size": [
+      512,
+      288
+    ]
+  },
+  "keep_duration": true,
+  "fps": 59.796524723801355
+}

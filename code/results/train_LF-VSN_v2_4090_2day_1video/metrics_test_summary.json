@@ -1,0 +1,14 @@
+{
+  "checkpoint": "C:\\capstone_sbn_07\\LF-VSN_V2\\experiments\\train_LF-VSN_v2_4090_2day_1video\\models\\latest_G.pth",
+  "num_samples": 600,
+  "psnr_cover": 51.66184143419156,
+  "psnr_secret": [
+    49.1876108205692
+  ],
+  "psnr_stego": 42.74012551596566,
+  "ssim_cover": 0.995253941683946,
+  "ssim_secret": [
+    0.9964979248089814
+  ],
+  "ssim_stego": 0.9622265776662945
+}

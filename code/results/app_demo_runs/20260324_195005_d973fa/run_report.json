@@ -1,0 +1,22 @@
+{
+  "run_dir": "/home/hunt/MyProjects/Fuckstone/LF-VSN-main/code/results/app_demo_runs/20260324_195005_d973fa",
+  "device": "cuda",
+  "option_path": "/home/hunt/MyProjects/Fuckstone/LF-VSN-main/code/options/train/train_LF-VSN_1video_proto.yml",
+  "checkpoint_path": "/home/hunt/MyProjects/Fuckstone/LF-VSN-main/experiments/train_LF-VSN_1video_proto/models/latest_G.pth",
+  "size_preset": "Balanced (recommended)",
+  "preprocess": {
+    "paired_frames": 539,
+    "used_frames": 180,
+    "target_size": [
+      384,
+      216
+    ]
+  },
+  "keep_duration": true,
+  "fps": 19.969154822963944,
+  "stego_preview_path": "/home/hunt/MyProjects/Fuckstone/LF-VSN-main/code/results/app_demo_runs/20260324_195005_d973fa/stego_preview.mp4",
+  "stego_lossless_path": "/home/hunt/MyProjects/Fuckstone/LF-VSN-main/code/results/app_demo_runs/20260324_195005_d973fa/stego_lossless.mp4",
+  "avg_psnr_cover": 52.73935004340278,
+  "avg_psnr_secret": 42.31191315121121,
+  "avg_psnr_stego_vs_cover": 41.176112768385146
+}
