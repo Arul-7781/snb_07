@@ -1,0 +1,45 @@
+# Python environments and local tooling
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Vimeo-90K dataset and downloaded archives
+code/vimeo90k/
+*.zip
+*.7z
+*.tar
+*.tar.gz
+*.rar
+
+# Generated experiments, checkpoints, and training states
+experiments/
+tb_logger/
+
+# Generated runtime configurations
+code/options/train/runtime_generated/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Keep source code, model definitions, and results trackable.
+# Result files under code/results/ are intentionally not ignored.

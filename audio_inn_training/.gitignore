@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+runs/*
+!runs/.gitkeep
+data/LibriSpeech/
+*.pt
+*.pth
+.DS_Store

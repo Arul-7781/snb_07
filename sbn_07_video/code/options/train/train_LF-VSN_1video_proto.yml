@@ -1,0 +1,106 @@
+#### general settings
+
+name: train_LF-VSN_1video_proto
+use_tb_logger: true
+model: MIMO-VRN-h
+distortion: sr
+scale: 4
+gpu_ids: [0]
+gop: 3
+num_video: 1
+single_secret_only: true
+test_frame_offsets: [0]
+
+#### datasets
+
+datasets:
+  train:
+    name: Vimeo90K-ProtoTrain
+    mode: train
+    interval_list: [1]
+    random_reverse: false
+    border_mode: false
+    data_path: vimeo90k/sequences
+    txt_path: vimeo90k/sep_trainlist_proto.txt
+    num_video: 1
+
+    N_frames: 3
+    use_shuffle: true
+    n_workers: 4
+    batch_size: 2
+    GT_size: 128
+    LQ_size: 36
+    use_flip: true
+    use_rot: true
+    color: RGB
+
+  val:
+    num_video: 1
+    name: Vimeo90K-ProtoVal
+    mode: test
+    data_path: vimeo90k/sequences
+    txt_path: vimeo90k/sep_testlist_proto.txt
+
+    N_frames: 1
+    max_items: 200
+    padding: 'new_info'
+    pred_interval: -1
+
+
+#### network structures
+
+network_G:
+  which_model_G:
+      subnet_type: DBNet
+  in_nc: 12
+  out_nc: 12
+  block_num: [6, 6]
+  scale: 2
+  init: xavier_group
+  block_num_rbm: 6
+  clamp: 0.9
+
+
+#### path
+
+path:
+  pretrain_model_G:
+  models: ckp/base
+  strict_load: true
+  resume_state: ~
+
+
+#### training settings: learning rate scheme, loss
+
+train:
+
+  lr_G: !!float 1e-4
+  beta1: 0.9
+  beta2: 0.5
+  niter: 20000
+  warmup_iter: -1
+
+  lr_scheme: MultiStepLR
+  lr_steps: [8000, 14000, 18000]
+  lr_gamma: 0.5
+
+  pixel_criterion_forw: l2
+  pixel_criterion_back: l1
+
+  manual_seed: 10
+
+  val_freq: !!float 500
+
+  lambda_fit_forw: 56.
+  lambda_rec_back: 1
+  lambda_center: 0
+
+  weight_decay_G: !!float 1e-12
+  gradient_clipping: 8
+
+
+#### logger
+
+logger:
+  print_freq: 100
+  save_checkpoint_freq: !!float 1000

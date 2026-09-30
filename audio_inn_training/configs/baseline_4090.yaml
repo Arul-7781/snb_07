@@ -1,0 +1,48 @@
+seed: 42
+run_name: baseline_4090
+
+data:
+  root: data/LibriSpeech
+  train_split: train-clean-100
+  val_split: dev-clean
+  test_split: test-clean
+  sample_rate: 16000
+  segment_seconds: 1.0
+  train_pairs_per_epoch: 12000
+  val_pairs: 512
+  num_workers: 6
+
+model:
+  squeeze_factor: 8
+  num_blocks: 8
+  hidden_channels: 64
+  clamp: 1.5
+
+training:
+  minimum_vram_gb: 20
+  epochs: 15
+  batch_size: 16
+  lr: 0.0002
+  weight_decay: 0.00001
+  grad_clip: 5.0
+  amp: true
+  amp_dtype: bfloat16
+  log_every_steps: 25
+  validate_every_epochs: 1
+  save_every_epochs: 1
+  sample_every_epochs: 1
+  resume: null
+
+loss:
+  stego_l1: 1.0
+  stego_stft: 0.5
+  secret_l1: 2.0
+  secret_stft: 1.0
+  latent_prior: 0.02
+
+stft:
+  fft_sizes: [256, 512, 1024]
+  hop_factors: [4, 4, 4]
+
+output:
+  root: runs

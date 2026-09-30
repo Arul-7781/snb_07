@@ -1,0 +1,525 @@
+I’ll first locate `final_1.pdf` and the existing video pipeline’s invertible-network components, then I’ll map the audio-specific requirements onto that design. I’ll stop at an architecture proposal with explicit data flow, invertibility constraints, novelty, and likely implementation risks before touching code.
+
+Searched for files matching `capstone_sbn_07` · `**/*final_1*.pdf`, no matches
+
+Searched for files matching `capstone_sbn_07` · `LF-VSN_V2/models/**/*.py`, no matches
+
+Searched for regex `Inv|invert|wavelet|frequency|flow|audio|video` (`**/LF-VSN_V2/README*.md`), 23 results
+
+Read , lines 1 to 240
+
+The local summary confirms the video system is a multi-scale invertible flow with DWT, affine coupling, scalable secret handling, and a decode-safe media path. The PDF search did not find a matching file at the workspace root, so I’m checking the repository tree and the implementation directly now; that will also tell us which ideas should be inherited versus redesigned for audio.
+
+Read 
+
+Searched for regex `final_1|pdf|audio|speech|stegan` (`capstone_sbn_07`), 419 results
+
+Read , lines 1 to 280
+
+Read 
+
+The reference is present as `FINAL1_260824_122433.pdf` (uppercase filename), and the implementation confirms the controlling pattern: reversible additive/affine coupling, bounded log-scale, multi-frame packing, and a learned latent prior for reverse recovery. I’m extracting the paper’s audio requirements and terminology next so the proposal is grounded in your actual reference rather than only in generic audio-flow design.
+
+Ran terminal command: from pypdf import PdfReader; p=r'c:\capstone_sbn_07\FINAL1_260824_122433.pdf'; reader=PdfReader(p); print('PAGES',len(reader.pages)); [print(f'\\n--- PAGE {i+1} ---\\n{page.extract_text() or ""}') for i,page in enumerate(reader.pages)]
+Completed with input: from pypdf import PdfReader; p=r'c:\capstone_sbn_07\FINAL1_260824_122433.pdf'; reader=PdfReader(p); print('PAGES',len(reader.pages)); [print(f'\\n--- PAGE {i+1} ---\\n{page.extract_text() or ""}') for i,page in enumerate(reader.pages)]
+
+Ran terminal command: @'
+from pypdf import PdfReader
+p = r'c:\capstone_sbn_07\FINAL1_260824_122433.pdf'
+reader = PdfReader(p)
+print('PAGES', len(reader.pages))
+for index, page in enumerate(reader.pages):
+    print(f'\n--- PAGE {index + 1} ---\n{page.extract_text() or ""}')
+'@ | python
+Completed with input: @'
+from pypdf import PdfReader
+p = r'c:\capstone_sbn_07\FINAL1_260824_122433.pdf'
+reader = PdfReader(p)
+print('PAGES', len(reader.pages))
+for index, page in enumerate(reader.pages):
+    print(f'\n--- PAGE {index + 1} ---\n{page.extract_text() or ""}')
+'@ | python
+
+Ran terminal command: @'
+from pypdf import PdfReader
+p = r'c:\capstone_sbn_07\FINAL1_260824_122433.pdf'
+reader = PdfReader(p)
+print('PAGES', len(reader.pages))
+for index, page in enumerate(reader.pages):
+    print(f'\n--- PAGE {index + 1} ---\n{page.extract_text() or ""}')
+'@ | & 'c:\capstone_sbn_07\venv\Scripts\python.exe'
+
+Read , lines 1 to 260
+
+Ran terminal command: $text = @'
+from pypdf import PdfReader
+p = r'c:\capstone_sbn_07\FINAL1_260824_122433.pdf'
+reader = PdfReader(p)
+for index, page in enumerate(reader.pages):
+    print(f'--- PAGE {index + 1} ---')
+    print(page.extract_text() or '')
+'@; $text | & 'c:\capstone_sbn_07\venv\Scripts\python.exe' | Select-String -Pattern 'audio|Audio|spect|wave|STFT|MFCC|mel|psycho|INN|invert|coupling|loss|chunk|sample|robust|codec|noise|compression' -Context 2,3
+Completed with input: $text = @'
+from pypdf import PdfReader
+p = r'c:\capstone_sbn_07\FINAL1_260824_122433.pdf'
+reader = PdfReader(p)
+for index, page in enumerate(reader.pages):
+    print(f'--- PAGE {index + 1} ---')
+    print(page.extract_text() or '')
+'@; $text | & 'c:\capstone_sbn_07\venv\Scripts\python.exe' | Select-String -Pattern 'audio|Audio|spect|wave|STFT|MFCC|mel|psycho|INN|invert|coupling|loss|chunk|sample|robust|codec|noise|compression' -Context 2,3
+
+The reference specifies a 16 kHz, 1-second chunked Audio-INN with waveform plus time-frequency supervision, and reports very high reconstruction SNR under float32/float16/int8. The important design gap is robustness: exact invertibility alone is fragile under resampling, clipping, codec loss, and packet drop, so the audio proposal needs a reversible core plus explicit error correction, synchronization, and psychoacoustic control.
+
+Ran terminal command: $text = @'
+from pypdf import PdfReader
+p = r'c:\capstone_sbn_07\FINAL1_260824_122433.pdf'
+reader = PdfReader(p)
+for index, page in enumerate(reader.pages):
+    if index < 19:
+        print(f'--- PAGE {index + 1} ---')
+        print(page.extract_text() or '')
+'@; $text | & 'c:\capstone_sbn_07\venv\Scripts\python.exe' | Out-File -Encoding utf8 'c:\capstone_sbn_07\pdf_audio_pages.txt'
+
+Read , lines 1 to 220
+
+Read , lines 220 to 441
+
+I have enough evidence to make the proposal concrete. I’m cleaning up the temporary PDF extraction artifact, then I’ll lay out a named audio architecture with its forward/reverse equations, robustness mechanisms, training losses, evaluation plan, and the specific parts I would implement first.
+
+Generating patch (3 lines) in 
+
+Yes. Based on `FINAL1_260824_122433.pdf` and the existing LF-VSN implementation, I propose an audio architecture called **RAIL-INN: Robust Audio Invertible Latent Network**.
+
+The key design principle is:
+
+> Preserve the exact reversibility of WavInWav/LF-VSN while adding explicit robustness against resampling, compression, noise, clipping, trimming, and packet loss.
+
+Exact invertibility alone does not guarantee robustness after a codec or signal transformation, so both properties must be trained separately.
+
+## 1. Overall Pipeline
+
+```mermaid
+flowchart LR
+    A[Cover Audio] --> P[Audio Canonicalization]
+    B[Secret Audio] --> P2[Audio Canonicalization]
+
+    P --> S[Shared Time Sync Map]
+    P2 --> S
+
+    S --> C[Cover Chunks]
+    S --> D[Secret Chunks]
+
+    C --> E[Reversible Subband Analysis]
+    D --> F[Reversible Subband Analysis]
+
+    E --> G[RAIL-INN Coupling Core]
+    F --> G
+
+    G --> H[Stego Waveform]
+    G --> I[Latent Representation]
+
+    I --> J[Latent Redundancy and ECC]
+    J --> H
+
+    H --> K[Audio Container / Codec]
+
+    K --> L[Decoder Canonicalization]
+    L --> M[Robust Synchronization]
+    M --> N[Inverse RAIL-INN]
+    N --> O[Recovered Secret Audio]
+```
+
+## 2. Preprocessing and Synchronization
+
+The reference uses 16 kHz audio and 1-second chunks. I would retain this as the default:
+
+- Sample rate: `16,000 Hz`
+- Chunk size: `16,000 samples`
+- Mono or stereo support
+- Deterministic timestamp-based chunk IDs
+- Explicit padding masks for the final partial chunk
+- Stored sample-rate, channel-count, duration, and chunk metadata
+
+Instead of independently processing each chunk, each chunk should include a small context region:
+
+- Main region: 1 second
+- Context: approximately 50 to 100 ms on each side
+- Overlap-add reconstruction using a Hann or squared-sine window
+
+This prevents audible discontinuities at chunk boundaries while keeping the system compatible with the PDF’s shared 1-second Sync Map.
+
+## 3. Reversible Audio Representation
+
+The raw waveform should first pass through a reversible multi-band transform.
+
+Recommended structure:
+
+1. Reversible lifting or Haar wavelet analysis
+2. Four frequency bands per audio channel
+3. Separate low-frequency and high-frequency paths
+4. Invertible channel permutation
+5. No lossy mel conversion inside the reversible path
+
+The important distinction is:
+
+- **Waveform and subband representations** participate in the invertible mapping.
+- **STFT, mel, and psychoacoustic representations** are used for losses and conditioning only.
+
+A mel spectrogram should not replace the waveform in the invertible core because it discards phase and is not exactly reversible.
+
+## 4. RAIL-INN Coupling Block
+
+Each block receives a cover representation $x$ and secret representation $s$.
+
+The forward operation uses additive and affine coupling:
+
+$$
+y_1 = x_1 + F(x_2)
+$$
+
+$$
+\alpha = c \cdot \tanh(H(y_1))
+$$
+
+$$
+y_2 = s_2 \odot \exp(\alpha) + G(y_1)
+$$
+
+The inverse operation is:
+
+$$
+s_2 = (y_2 - G(y_1)) \odot \exp(-\alpha)
+$$
+
+$$
+x_1 = y_1 - F(s_2)
+$$
+
+This preserves the main LF-VSN idea while adapting the subnetworks to one-dimensional audio.
+
+Each block should contain:
+
+- Dilated gated 1D convolutions
+- Depthwise-separable temporal convolutions
+- Channel shuffle
+- Frequency-band mixing
+- Residual conditioning from the cover
+- Bounded scale values to prevent numerical instability
+
+A suitable dilation pattern is:
+
+```text
+1, 2, 4, 8, 16, 8, 4, 2, 1
+```
+
+This captures local waveform structure, phonetic patterns, and longer musical or speech context without requiring a very large model.
+
+## 5. Three-Way Audio Conditioning
+
+The main novelty should be a **tri-domain adaptive coupling mechanism**.
+
+Each coupling subnet receives information from:
+
+1. Time-domain waveform features
+2. STFT magnitude and phase-aware features
+3. Psychoacoustic features such as masking threshold and loudness
+
+The STFT and psychoacoustic branches do not directly modify the invertible state. Instead, they generate conditioning parameters for $F$, $G$, and $H$.
+
+This allows the model to place more hidden information in regions where the human auditory system is less sensitive, such as:
+
+- Temporally masked regions
+- Spectral regions near strong harmonics
+- Higher-frequency regions with sufficient cover energy
+- Non-silent portions of speech or music
+
+Silence should receive very little payload because modifications there are highly detectable.
+
+## 6. Latent Redundancy Predictor
+
+The reference describes an auxiliary latent variable for exact inversion and a redundancy estimator for stable recovery. I would combine those ideas.
+
+During encoding:
+
+$$
+(y, z) = f_\theta(x, s)
+$$
+
+where:
+
+- $y$ becomes the stego audio representation
+- $z$ contains residual information needed for reconstruction
+
+During decoding, the decoder estimates the latent:
+
+$$
+\hat{z} = r_\phi(y)
+$$
+
+Then:
+
+$$
+(\hat{x}, \hat{s}) = f_\theta^{-1}(y, \hat{z})
+$$
+
+The redundancy predictor should not simply generate random Gaussian noise. It should predict the latent from the received stego signal.
+
+To improve robustness, the latent is divided into:
+
+- Critical latent channels
+- Redundant latent channels
+- Low-priority latent channels
+
+Critical information receives stronger protection and more redundancy. Low-priority information can be reconstructed perceptually if partially damaged.
+
+## 7. Error Correction and Synchronization
+
+This is essential for a useful audio system.
+
+Each chunk should contain a small robust synchronization payload:
+
+- Chunk ID
+- Payload version
+- Channel count
+- Sample-rate identifier
+- CRC
+- Short synchronization pilot
+
+The latent information should be:
+
+1. Quantized
+2. Interleaved across multiple chunks
+3. Protected with an error-correcting code such as Reed-Solomon or LDPC
+4. Spread across perceptually suitable regions
+
+Interleaving prevents one damaged chunk from destroying one complete secret segment.
+
+For trimming or dropped chunks, the decoder can:
+
+- Detect the missing chunk using the Sync Map
+- Recover its metadata from neighboring chunks
+- Mark the chunk as uncertain
+- Use temporal latent prediction to reconstruct an approximation
+
+This is more robust than assuming every encoded chunk survives unchanged.
+
+## 8. Robustness Training
+
+During training, the stego waveform should pass through randomized differentiable and nondifferentiable attacks:
+
+- MP3/AAC compression
+- μ-law and int8 quantization
+- Additive background noise
+- Reverberation
+- Band-pass and low-pass filtering
+- Resampling to 8 kHz, then back to 16 kHz
+- Amplitude clipping
+- Dynamic-range compression
+- Small gain changes
+- Time shifts
+- Short chunk dropout
+- Mild time stretching
+
+The decoder is trained using the attacked stego signal, not only the clean output:
+
+$$
+\hat{s} = f_\theta^{-1}(A(y), r_\phi(A(y)))
+$$
+
+where $A$ is a sampled attack operation.
+
+This creates two useful decoder modes:
+
+- **Lossless mode:** very high SNR with unmodified float32 audio
+- **Robust mode:** lower but practical recovery quality after codec and signal distortions
+
+The PDF’s reported `137 dB` float32 SNR should be treated as an exact numerical reconstruction result, not evidence of codec robustness.
+
+## 9. Loss Function
+
+The total objective should combine cover imperceptibility, secret recovery, spectral quality, robustness, and anti-detection behavior:
+
+$$
+\mathcal{L} =
+\lambda_c \mathcal{L}_{cover}
++
+\lambda_s \mathcal{L}_{secret}
++
+\lambda_{tf} \mathcal{L}_{time-frequency}
++
+\lambda_p \mathcal{L}_{psycho}
++
+\lambda_r \mathcal{L}_{robust}
++
+\lambda_z \mathcal{L}_{latent}
++
+\lambda_a \mathcal{L}_{adversarial}
+$$
+
+### Cover loss
+
+- Waveform L1 or Charbonnier loss
+- Multi-resolution STFT loss
+- Loudness difference
+- Silence preservation
+
+### Secret loss
+
+- Waveform L1/SI-SDR
+- Multi-resolution STFT magnitude loss
+- Phase-aware loss
+- Mel-spectrogram loss
+- Optional speech-perceptual loss using a frozen speech encoder
+
+### Psychoacoustic loss
+
+Penalizes modifications that exceed the local masking threshold:
+
+$$
+\mathcal{L}_{psycho}
+=
+\max(0, |Y-X| - M_X)
+$$
+
+where $M_X$ is the cover-dependent masking threshold.
+
+### Robustness loss
+
+Compares secret recovery from clean and attacked stego audio:
+
+$$
+\mathcal{L}_{robust}
+=
+\left\|
+\hat{s}_{clean} - \hat{s}_{attacked}
+\right\|_1
++
+\left\|
+\hat{s}_{attacked} - s
+\right\|_1
+$$
+
+### Adversarial loss
+
+A small audio steganalysis discriminator can distinguish cover and stego audio using:
+
+- Waveform statistics
+- STFT statistics
+- Spectral residuals
+- Higher-order sample correlations
+
+The adversarial term should be introduced late in training. If introduced too early, it can damage secret recovery.
+
+## 10. Training Strategy
+
+I recommend four stages.
+
+### Stage 1: Exact invertibility
+
+Train only clean float32 chunks.
+
+Goal:
+
+- Verify forward/reverse numerical reconstruction
+- Confirm stable coupling scales
+- Target extremely high clean reconstruction SNR
+
+### Stage 2: Perceptual cover quality
+
+Add:
+
+- Waveform loss
+- Multi-resolution STFT loss
+- Psychoacoustic masking loss
+- Silence and loudness constraints
+
+### Stage 3: Robust decoding
+
+Introduce codec, resampling, noise, filtering, clipping, and time-shift augmentation gradually.
+
+### Stage 4: Security and capacity tuning
+
+Add:
+
+- Steganalysis discriminator
+- Latent quantization
+- Error correction
+- Variable payload rates
+- Multi-secret training
+
+This staged process should be more stable than attempting exact reconstruction, perceptual quality, robustness, and adversarial concealment simultaneously.
+
+## 11. Capacity Modes
+
+The architecture should expose explicit capacity modes:
+
+| Mode | Payload | Expected behavior |
+|---|---:|---|
+| Fidelity | Lower | Highest cover quality and robustness |
+| Balanced | Medium | Recommended default |
+| Capacity | Higher | More audible risk and lower robustness |
+| Multi-secret | Multiple streams | Requires scalable latent allocation |
+
+The model should predict a per-time-frequency payload mask rather than distributing the secret uniformly. This makes the system more useful for speech and music with very different acoustic structures.
+
+## 12. Evaluation
+
+The audio pipeline should report three separate categories.
+
+### Cover imperceptibility
+
+- SNR
+- SI-SDR
+- Log-spectral distance
+- Multi-resolution STFT distance
+- PESQ or ViSQOL where applicable
+- Loudness deviation
+- Detection accuracy of the steganalysis discriminator
+
+### Secret reconstruction
+
+- SNR
+- SI-SDR
+- Log-spectral distance
+- Mel-spectrogram error
+- PESQ/ViSQOL
+- Word error rate for speech secrets
+- Chunk recovery rate
+
+### Robustness matrix
+
+Evaluate separately under:
+
+- Clean float32
+- Float16
+- int8
+- MP3 at multiple bitrates
+- AAC
+- Resampling
+- Noise
+- Filtering
+- Clipping
+- Time shift
+- Chunk loss
+- Remuxing and container conversion
+
+The key result should be a quality-versus-robustness curve, not just one SNR value.
+
+## 13. Recommended Implementation Order
+
+I would implement this in the following order:
+
+1. Audio preprocessing and deterministic 16 kHz Sync Map
+2. Reversible subband transform
+3. Single-secret waveform RAIL-INN
+4. Clean encode/decode test
+5. Waveform and multi-resolution STFT losses
+6. Psychoacoustic conditioning
+7. Latent redundancy predictor
+8. Codec and distortion augmentation
+9. Quantization and error correction
+10. Multi-secret and synchronized audio-video integration
+
+The first milestone should be a **single-secret, lossless-clean audio prototype**. Once its inverse path is proven numerically, robustness can be added without obscuring whether failures originate in the INN or the attack-handling layer.
+
+No project source files were changed.

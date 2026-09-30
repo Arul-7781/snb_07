@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "audio-inn-prototype"
+version = "0.1.0"
+description = "Two-week Audio-INN steganography prototype scaffold"
+requires-python = ">=3.10"
+dependencies = [
+  "torch>=2.6,<3",
+  "numpy>=1.26",
+  "scipy>=1.12",
+  "soundfile>=0.12",
+  "PyYAML>=6.0",
+  "tensorboard>=2.16",
+  "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

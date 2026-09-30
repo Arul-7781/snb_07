@@ -1,0 +1,29 @@
+# Python environments and caches
+.venv/
+venv/
+**/.venv/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Local data and downloaded corpora
+**/datasets/
+**/downloads/
+**/LibriSpeech/
+
+# Generated experiment outputs and logs
+sbn_07_video/code/results/
+sbn_07_video/experiments/
+*.log
+
+# Local IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+sbn_07_video_git_backup/
+
+# Keep model checkpoints and selected run metrics unless explicitly generated above.

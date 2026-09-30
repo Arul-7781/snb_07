@@ -1,0 +1,3 @@
+{"path":"/absolute/path/to/cover_or_secret_001.wav","sample_rate":16000,"channels":1,"frames":64000,"duration":4.0,"split":"train","source":"example"}
+{"path":"/absolute/path/to/cover_or_secret_002.wav","sample_rate":16000,"channels":1,"frames":64000,"duration":4.0,"split":"val","source":"example"}
+
