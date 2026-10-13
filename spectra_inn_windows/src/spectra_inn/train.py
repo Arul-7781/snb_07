@@ -138,7 +138,7 @@ def compute_batch(
     secret: torch.Tensor,
 ) -> tuple[torch.Tensor, dict[str, torch.Tensor], dict[str, torch.Tensor]]:
     stego, residual, diagnostics = model(cover, secret)
-    recovered_cover, recovered_secret, _ = model.blind_inverse(stego)
+    recovered_cover, recovered_secret, _ = model.decode(stego)
     total, components = objective(
         cover=cover,
         secret=secret,
@@ -170,6 +170,27 @@ def exact_cycle_error(
 
 
 @torch.no_grad()
+def latent_comparison(
+    model: CleanAudioINN,
+    cover: torch.Tensor,
+    secret: torch.Tensor,
+) -> dict[str, torch.Tensor]:
+    """Secret recovery under each decoder-side latent, evaluated in float32."""
+    stego, residual, _ = model(cover, secret)
+    _, gaussian_secret, _ = model.blind_inverse(stego)
+    _, oracle_secret = model.inverse(stego, residual)
+    values = {
+        "secret_snr_db_gaussian": snr_db(secret, gaussian_secret),
+        "secret_snr_db_true_residual": snr_db(secret, oracle_secret),
+    }
+    if model.predictor is not None:
+        _, predicted_secret, predicted = model.predicted_inverse(stego)
+        values["secret_snr_db_predicted"] = snr_db(secret, predicted_secret)
+        values["latent_prediction_snr_db"] = snr_db(residual, predicted)
+    return values
+
+
+@torch.no_grad()
 def validate(
     model: CleanAudioINN,
     objective: StageOneLoss,
@@ -189,6 +210,7 @@ def validate(
             total, components, metrics = compute_batch(model, objective, cover, secret)
         values = {"total": total, **components, **metrics}
         values["exact_cycle_max"] = exact_cycle_error(model, cover, secret)
+        values.update(latent_comparison(model, cover, secret))
         for name, value in values.items():
             totals[name] = totals.get(name, 0.0) + float(value.detach().float().cpu())
         count += 1
@@ -250,11 +272,18 @@ def write_run_metadata(
     device: torch.device,
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
+    predictor = getattr(model, "predictor", None)
     serializable_config = {key: value for key, value in config.items() if not key.startswith("_")}
     with (output_dir / "config.resolved.yaml").open("w", encoding="utf-8") as handle:
         yaml.safe_dump(serializable_config, handle, sort_keys=False)
     metadata = {
         "parameters": sum(parameter.numel() for parameter in model.parameters()),
+        "latent_mode": getattr(model, "latent_mode", "gaussian"),
+        "predictor_parameters": (
+            sum(parameter.numel() for parameter in predictor.parameters())
+            if predictor is not None
+            else 0
+        ),
         "trainable_parameters": sum(
             parameter.numel() for parameter in model.parameters() if parameter.requires_grad
         ),
@@ -378,10 +407,14 @@ def main() -> None:
             )
             for name, value in validation.items():
                 writer.add_scalar(f"validation/{name}", value, step)
+            predicted_snr = validation.get("secret_snr_db_predicted")
+            predicted_text = f"predicted={predicted_snr:.2f} " if predicted_snr is not None else ""
             print(
                 f"\nvalidation step={step} total={validation['total']:.4f} "
                 f"cover_snr={validation['cover_snr_db']:.2f} "
                 f"secret_snr={validation['secret_snr_db']:.2f} "
+                f"[{predicted_text}gaussian={validation['secret_snr_db_gaussian']:.2f} "
+                f"true_residual={validation['secret_snr_db_true_residual']:.2f}] "
                 f"cycle={validation['exact_cycle_max']:.3e}"
             )
 

@@ -1,9 +1,10 @@
-.PHONY: help install install-dev check-env smoke test lint manifest
+.PHONY: help install install-dev check-env smoke test lint manifest evaluate
 
 PYTHON ?= python
 CONFIG ?= configs/baseline_16k.yaml
 AUDIO_ROOT ?= data/audio
 MANIFEST ?= data/manifests/all.jsonl
+CHECKPOINT ?=
 
 help:
 	@echo "install      Install the package after installing PyTorch"
@@ -13,6 +14,7 @@ help:
 	@echo "test         Run unit tests"
 	@echo "lint         Run Ruff"
 	@echo "manifest     Index audio under AUDIO_ROOT into MANIFEST"
+	@echo "evaluate     Score CHECKPOINT on the test split and export WAV examples"
 
 install:
 	$(PYTHON) -m pip install -e .
@@ -35,3 +37,5 @@ lint:
 manifest:
 	$(PYTHON) -m spectra_inn.data.manifest --root $(AUDIO_ROOT) --output $(MANIFEST)
 
+evaluate:
+	$(PYTHON) -m spectra_inn.evaluate --checkpoint $(CHECKPOINT)

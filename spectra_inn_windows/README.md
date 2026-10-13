@@ -36,6 +36,12 @@ run, `-TrainingHours 20` to set the wall-clock budget, or
 `-Resume "runs\one_day_librispeech\checkpoints\step_00005000.pt"` to resume. Supplying
 `-AudioRoot "D:\my_audio"` bypasses automatic dataset download and uses local audio instead.
 
+## Trial 2: predicted latent (LF-VSN RPM)
+
+`configs/rpm_one_day_librispeech.yaml` replaces the decoder's Gaussian latent with a learned
+redundancy predictor, as in LF-VSN. See [the trial guide](docs/rpm_trial.md) for the exact steps
+from download to evaluation.
+
 ## Quick start
 
 Read [training prerequisites](docs/training_prerequisites.md) first. In a Python 3.11 environment:

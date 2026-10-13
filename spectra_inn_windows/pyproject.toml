@@ -31,6 +31,7 @@ metrics = [
 [project.scripts]
 spectra-train = "spectra_inn.train:main"
 spectra-build-manifest = "spectra_inn.data.manifest:main"
+spectra-evaluate = "spectra_inn.evaluate:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
