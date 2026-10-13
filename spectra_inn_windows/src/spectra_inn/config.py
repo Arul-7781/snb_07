@@ -51,6 +51,17 @@ def validate_config(config: dict[str, Any]) -> None:
         raise ConfigError("model.num_blocks must be positive")
     if float(model["clamp"]) <= 0:
         raise ConfigError("model.clamp must be positive")
+    latent_mode = model.get("latent_mode", "gaussian")
+    if latent_mode not in ("gaussian", "predicted"):
+        raise ConfigError("model.latent_mode must be 'gaussian' or 'predicted'")
+    predictor = model.get("predictor") or {}
+    if latent_mode == "predicted":
+        if int(predictor.get("num_blocks", 8)) < 1:
+            raise ConfigError("model.predictor.num_blocks must be positive")
+        if int(predictor.get("hidden_channels", 64)) < 1:
+            raise ConfigError("model.predictor.hidden_channels must be positive")
+        if int(predictor.get("kernel_size", 3)) % 2 == 0:
+            raise ConfigError("model.predictor.kernel_size must be odd")
     if int(training["batch_size"]) < 1 or int(training["accumulation_steps"]) < 1:
         raise ConfigError("Batch size and accumulation steps must be positive")
     if int(training["max_steps"]) < 1:
