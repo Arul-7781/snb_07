@@ -157,6 +157,10 @@ def main():
             print('  First missing: {}'.format(missing[0]))
         if too_short:
             print('  First too short: {} ({})'.format(too_short[0][0], too_short[0][1]))
+        if missing or too_short:
+            raise RuntimeError(
+                'Vimeo-90K integrity check failed; refusing to continue with an incomplete dataset.'
+            )
 
 
 if __name__ == '__main__':

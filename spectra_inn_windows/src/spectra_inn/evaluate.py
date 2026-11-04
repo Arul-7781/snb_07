@@ -54,8 +54,8 @@ def evaluate_batch(
         "gaussian": model.blind_inverse(stego, generator=generator)[1],
     }
     if model.predictor is not None:
-        recovered["predicted"] = model.predicted_inverse(stego)[1]
-        recovered["predicted_pcm16"] = model.predicted_inverse(stego_pcm16)[1]
+        recovered["predicted"] = model.decode(stego)[1]
+        recovered["predicted_pcm16"] = model.decode(stego_pcm16)[1]
     else:
         recovered["gaussian_pcm16"] = model.blind_inverse(stego_pcm16, generator=generator)[1]
 

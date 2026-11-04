@@ -1,0 +1,40 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.codegraph/
+dist/
+
+# Local data and generated artifacts
+data/audio/
+datasets/
+data/manifests/*.jsonl
+data/manifests/*.summary.json
+!data/manifests/example.jsonl
+runs/
+checkpoints/
+artifacts/
+*.pt
+*.pth
+*.ckpt
+*.wav
+*.flac
+*.mp3
+*.ogg
+*.m4a
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+
+# Experiment tracking
+wandb/
+mlruns/
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store

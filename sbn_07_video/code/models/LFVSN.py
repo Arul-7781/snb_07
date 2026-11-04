@@ -262,6 +262,7 @@ class Model_VSN(BaseModel):
                     out_x_h[:, i, self.gop // 2].unsqueeze(1),
                     secret_center[:, i].unsqueeze(1)
                 )
+            l_secret_rec = l_secret_rec / active_n
 
             secret_weight = float(self.train_opt.get('lambda_secret_weight', 4.0))
             forward_weight = float(self.train_opt.get('lambda_forward_weight', 1.0))

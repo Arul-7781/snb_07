@@ -3,9 +3,9 @@
 # residual from the stego instead of sampling Gaussian noise. Compare its validation
 # curves against a one_day_librispeech run to measure the effect of the predictor.
 experiment:
-  name: rpm_one_day_librispeech
+  name: rpm_wavinwav_clean_stable_one_day_librispeech
   seed: 3407
-  output_dir: runs/rpm_one_day_librispeech
+  output_dir: runs/rpm_wavinwav_clean_stable_one_day_librispeech
 
 data:
   manifest: data/manifests/all.jsonl
@@ -24,20 +24,27 @@ model:
   num_blocks: 8
   hidden_channels: 64
   subnet_layers: 4
-  clamp: 1.5
+  subnet_scales: 4
+  clamp: 0.75
   kernel_size: 3
   latent_mode: predicted
+  secret_decode_mode: predicted
   predictor:
-    hidden_channels: 64
-    num_blocks: 8
+    hidden_channels: 128
+    num_blocks: 9
+    kernel_size: 3
+  secret_decoder:
+    hidden_channels: 128
+    num_blocks: 10
     kernel_size: 3
 
 loss:
   stego_time: 2.0
   stego_stft: 1.0
-  secret_time: 1.0
-  secret_stft: 1.0
+  secret_time: 4.0
+  secret_stft: 3.0
   recovered_cover: 0.25
+  latent_prediction: 0.5
   # The predictor replaces the Gaussian stand-in, so the residual no longer needs to look
   # Gaussian. LF-VSN trains its predictor with no prior on the residual.
   latent_prior: 0.0
@@ -47,11 +54,21 @@ loss:
 training:
   batch_size: 8
   accumulation_steps: 2
-  max_steps: 150000
-  max_hours: 20.0
-  learning_rate: 0.0001
+  max_steps: 200000
+  max_hours: 24.0
+  learning_rate: 0.00005
+  predictor_learning_rate: 0.0001
+  oracle_warmup_steps: 5000
+  channel_augment_probability: 0.0
+  channel_noise_std: 0.0
+  channel_speckle_std: 0.0
+  channel_resample_probability: 0.0
+  channel_resample_min: 0.9
+  channel_resample_max: 1.1
+  amp_dtype: bfloat16
+  max_nonfinite_batches: 5
   weight_decay: 0.000001
-  grad_clip_norm: 5.0
+  grad_clip_norm: 2.0
   amp: true
   log_every: 25
   validate_every: 1000

@@ -6,10 +6,11 @@ import torch
 from torch import nn
 
 from spectra_inn.models.coupling import AffineCouplingBlock1d
-from spectra_inn.models.redundancy import RedundancyPredictor1d
+from spectra_inn.models.redundancy import RedundancyPredictor1d, SecretRecoveryDecoder1d
 from spectra_inn.transforms.haar import HaarPacket1d
 
 LATENT_MODES = ("gaussian", "predicted")
+SECRET_DECODE_MODES = ("predicted", "direct")
 
 
 class CleanAudioINN(nn.Module):
@@ -24,15 +25,26 @@ class CleanAudioINN(nn.Module):
         subnet_layers: int,
         clamp: float,
         kernel_size: int,
+        subnet_scales: int = 4,
         latent_mode: str = "gaussian",
         predictor_hidden_channels: int = 64,
         predictor_blocks: int = 8,
         predictor_kernel_size: int = 3,
+        secret_decoder_hidden_channels: int = 128,
+        secret_decoder_blocks: int = 10,
+        secret_decoder_kernel_size: int = 3,
+        secret_decode_mode: str = "predicted",
     ) -> None:
         super().__init__()
         if latent_mode not in LATENT_MODES:
             raise ValueError(f"latent_mode must be one of {LATENT_MODES}, got {latent_mode!r}")
+        if secret_decode_mode not in SECRET_DECODE_MODES:
+            raise ValueError(
+                f"secret_decode_mode must be one of {SECRET_DECODE_MODES}, "
+                f"got {secret_decode_mode!r}"
+            )
         self.latent_mode = latent_mode
+        self.secret_decode_mode = secret_decode_mode
         self.audio_channels = int(audio_channels)
         self.wavelet_levels = int(wavelet_levels)
         self.transform = HaarPacket1d(wavelet_levels)
@@ -44,10 +56,12 @@ class CleanAudioINN(nn.Module):
                 subnet_layers=subnet_layers,
                 clamp=clamp,
                 kernel_size=kernel_size,
+                subnet_scales=subnet_scales,
             )
             for _ in range(num_blocks)
         )
         self.predictor: RedundancyPredictor1d | None = None
+        self.secret_decoder: SecretRecoveryDecoder1d | None = None
         if latent_mode == "predicted":
             self.predictor = RedundancyPredictor1d(
                 channels=coefficient_channels,
@@ -55,11 +69,18 @@ class CleanAudioINN(nn.Module):
                 num_blocks=predictor_blocks,
                 kernel_size=predictor_kernel_size,
             )
+            self.secret_decoder = SecretRecoveryDecoder1d(
+                channels=audio_channels,
+                hidden_channels=secret_decoder_hidden_channels,
+                num_blocks=secret_decoder_blocks,
+                kernel_size=secret_decoder_kernel_size,
+            )
 
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> CleanAudioINN:
         model = config["model"]
         predictor = model.get("predictor") or {}
+        secret_decoder = model.get("secret_decoder") or {}
         return cls(
             audio_channels=int(config["data"]["channels"]),
             wavelet_levels=int(model["wavelet_levels"]),
@@ -68,10 +89,15 @@ class CleanAudioINN(nn.Module):
             subnet_layers=int(model["subnet_layers"]),
             clamp=float(model["clamp"]),
             kernel_size=int(model["kernel_size"]),
+            subnet_scales=int(model.get("subnet_scales", 4)),
             latent_mode=str(model.get("latent_mode", "gaussian")),
             predictor_hidden_channels=int(predictor.get("hidden_channels", 64)),
             predictor_blocks=int(predictor.get("num_blocks", 8)),
             predictor_kernel_size=int(predictor.get("kernel_size", 3)),
+            secret_decoder_hidden_channels=int(secret_decoder.get("hidden_channels", 128)),
+            secret_decoder_blocks=int(secret_decoder.get("num_blocks", 10)),
+            secret_decoder_kernel_size=int(secret_decoder.get("kernel_size", 3)),
+            secret_decode_mode=str(model.get("secret_decode_mode", "predicted")),
         )
 
     def forward(
@@ -139,6 +165,11 @@ class CleanAudioINN(nn.Module):
         cover, secret = self._inverse_coefficients(first, second)
         return cover, secret, self.transform.synthesis(second)
 
+    def direct_secret(self, stego: torch.Tensor) -> torch.Tensor:
+        if self.secret_decoder is None:
+            raise RuntimeError("direct_secret requires model.latent_mode='predicted'")
+        return self.secret_decoder(stego)
+
     def decode(
         self,
         stego: torch.Tensor,
@@ -146,5 +177,8 @@ class CleanAudioINN(nn.Module):
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Recover (cover, secret, latent) from stego alone using the configured latent."""
         if self.latent_mode == "predicted":
-            return self.predicted_inverse(stego)
+            cover, predicted_secret, latent = self.predicted_inverse(stego)
+            if self.secret_decode_mode == "direct":
+                predicted_secret = self.direct_secret(stego)
+            return cover, predicted_secret, latent
         return self.blind_inverse(stego, generator=generator)

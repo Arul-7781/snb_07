@@ -1,0 +1,387 @@
+{
+  "format": 1,
+  "archive_root": "spectra_inn_4090_training",
+  "source": {
+    "git_commit": "22bb6086da7f22bd652139fa56fa021ac3bdc2bb",
+    "working_tree_dirty": false
+  },
+  "entrypoint": "scripts/run_4090_suite.py",
+  "dataset_included": false,
+  "trained_weights_included": false,
+  "payload_bytes": 372518,
+  "timestamps": "normalized for reproducible builds",
+  "files": [
+    {
+      "path": ".gitignore",
+      "source_path": ".gitignore",
+      "bytes": 429,
+      "sha256": "5a2e9b9132597ddb42cb73dad0bb27488450502d141af9a19bdc7935779c2ecd"
+    },
+    {
+      "path": "README.md",
+      "source_path": "TRAINING_README.md",
+      "bytes": 6560,
+      "sha256": "805c898c5d37bacdbd269a22420705d23ee9c04ac391bae0d02dc666704c6060"
+    },
+    {
+      "path": "TRAINING_README.md",
+      "source_path": "TRAINING_README.md",
+      "bytes": 6560,
+      "sha256": "805c898c5d37bacdbd269a22420705d23ee9c04ac391bae0d02dc666704c6060"
+    },
+    {
+      "path": "configs/4090_suite.yaml",
+      "source_path": "configs/4090_suite.yaml",
+      "bytes": 1539,
+      "sha256": "62a3948465055af246834f235cf455efe9caee1b4d41d2ed9395daf328d428c3"
+    },
+    {
+      "path": "configs/baseline_16k.yaml",
+      "source_path": "configs/baseline_16k.yaml",
+      "bytes": 907,
+      "sha256": "81de4bc73583dc956942e8e555a636d9c7d72237042b6eaf4ca69ebb807d071c"
+    },
+    {
+      "path": "configs/one_day_librispeech.yaml",
+      "source_path": "configs/one_day_librispeech.yaml",
+      "bytes": 904,
+      "sha256": "050ba276b76a77f2876b60d2542444ccd0b592a6f2e80e662d36ada13946cbcb"
+    },
+    {
+      "path": "configs/rpm_3060_context_10k.yaml",
+      "source_path": "configs/rpm_3060_context_10k.yaml",
+      "bytes": 1149,
+      "sha256": "d6f3ad2c2eb0d2f7c21c6174c2b3e69c9c63af8f874e4347f6e1b13f3fafe429"
+    },
+    {
+      "path": "configs/rpm_3060_control_10k.yaml",
+      "source_path": "configs/rpm_3060_control_10k.yaml",
+      "bytes": 1142,
+      "sha256": "374f4d1f6ac37c41aa1d284c754d1ebe536f004a15d6e44bc7967cc4d075765b"
+    },
+    {
+      "path": "configs/rpm_3060_librispeech.yaml",
+      "source_path": "configs/rpm_3060_librispeech.yaml",
+      "bytes": 1131,
+      "sha256": "ded9dcc3addb37c1f96348b53b2ebce1c0b5ae6f9db3552783e1148d15b2ee66"
+    },
+    {
+      "path": "configs/rpm_3060_nmse_10k.yaml",
+      "source_path": "configs/rpm_3060_nmse_10k.yaml",
+      "bytes": 1197,
+      "sha256": "6bb7414b0c0e6542ad4485265471716140e57c84b415590c6c232369af021400"
+    },
+    {
+      "path": "configs/rpm_one_day_librispeech.yaml",
+      "source_path": "configs/rpm_one_day_librispeech.yaml",
+      "bytes": 1487,
+      "sha256": "c6918cf4b24eda1b072a88c04c4c494f4be35f9fb2fe2071577ca17130b16e93"
+    },
+    {
+      "path": "constraints-training.txt",
+      "source_path": "constraints-training.txt",
+      "bytes": 497,
+      "sha256": "f4113067375501849a766b67843dad44b63db8a4db08fd790c4602ec76afd422"
+    },
+    {
+      "path": "docs/4090_experiment_plan.md",
+      "source_path": "docs/4090_experiment_plan.md",
+      "bytes": 25649,
+      "sha256": "795f3e97754fc5242d7ea1e2465bba323807b4b28d880367db09e5b94eed5538"
+    },
+    {
+      "path": "docs/experiment_history_and_results.md",
+      "source_path": "docs/experiment_history_and_results.md",
+      "bytes": 48621,
+      "sha256": "a78e3cd38fe52f6d4db49c662f1b1058ef841c9a38ca437926cd7bf5b14cf6c9"
+    },
+    {
+      "path": "docs/final_audio_inn_plan.md",
+      "source_path": "docs/final_audio_inn_plan.md",
+      "bytes": 26763,
+      "sha256": "d92b259f7c5a2f60226e18ca8efe884c6233e1e7b11988f40b0e2ad1509bb32e"
+    },
+    {
+      "path": "docs/mentor_results_briefing.md",
+      "source_path": "docs/mentor_results_briefing.md",
+      "bytes": 9667,
+      "sha256": "1727580996802d9f550e039e93103fabdf771bc933511a27cb75148eaa423d0a"
+    },
+    {
+      "path": "docs/references/README.md",
+      "source_path": "docs/references/README.md",
+      "bytes": 1103,
+      "sha256": "80ea7499bb13fb514601fb0c661ce8e4d89a1397a4ba528deaa20334b1d05417"
+    },
+    {
+      "path": "docs/rpm_3060_training.md",
+      "source_path": "docs/rpm_3060_training.md",
+      "bytes": 8811,
+      "sha256": "ac445f81b28770e5715d9c508e72b9d177150c13e99d2ed2f2c1e610955507b6"
+    },
+    {
+      "path": "docs/rpm_context_trial.md",
+      "source_path": "docs/rpm_context_trial.md",
+      "bytes": 7016,
+      "sha256": "add28393bca2058b99d24f0868c83d5d17fc495531c6f3ec618e30d4285f4470"
+    },
+    {
+      "path": "docs/rpm_nmse_trial.md",
+      "source_path": "docs/rpm_nmse_trial.md",
+      "bytes": 5142,
+      "sha256": "6b341e179c0a7d2ee44a68ae18cf1ce658f6887eabaf0289b952ba942688e750"
+    },
+    {
+      "path": "docs/rpm_trial.md",
+      "source_path": "docs/rpm_trial.md",
+      "bytes": 7367,
+      "sha256": "b94011b21a260be4d66f91366a010242e9b424fd811b6e64acb6500cba4e4633"
+    },
+    {
+      "path": "docs/training_prerequisites.md",
+      "source_path": "docs/training_prerequisites.md",
+      "bytes": 11243,
+      "sha256": "083d7ee5db91a332ed38a9aad6e56d11c0770659215bcd5670b965866537708f"
+    },
+    {
+      "path": "pyproject.toml",
+      "source_path": "pyproject.toml",
+      "bytes": 1019,
+      "sha256": "10409112818b103603e64e8fa135b533f4ded20ba8fe25587483d19d4633187b"
+    },
+    {
+      "path": "scripts/build_training_bundle.py",
+      "source_path": "scripts/build_training_bundle.py",
+      "bytes": 5857,
+      "sha256": "031af55975e2c08e182f61916dbabe79c220f437ee874dfeb7a22ee925697e67"
+    },
+    {
+      "path": "scripts/check_env.py",
+      "source_path": "scripts/check_env.py",
+      "bytes": 3831,
+      "sha256": "b0052d9dcac5bf11c3c98c83b0aaac1d178419329b12577acbbe3f690f089a83"
+    },
+    {
+      "path": "scripts/prepare_librispeech.py",
+      "source_path": "scripts/prepare_librispeech.py",
+      "bytes": 9968,
+      "sha256": "a8e7630e1a9f01d7c6d277f4d7c744e083707059cf5f7db85e940698d39157a8"
+    },
+    {
+      "path": "scripts/run_4090_suite.py",
+      "source_path": "scripts/run_4090_suite.py",
+      "bytes": 179,
+      "sha256": "e37f8b22ae85431b64c617e0df4201c9b85306ec77098304fdea942f0b393405"
+    },
+    {
+      "path": "src/spectra_inn/__init__.py",
+      "source_path": "src/spectra_inn/__init__.py",
+      "bytes": 60,
+      "sha256": "a962cd89490be13b00ddd3cc412cc1766df8a0af6a92d431a74d6be7516e63ed"
+    },
+    {
+      "path": "src/spectra_inn/config.py",
+      "source_path": "src/spectra_inn/config.py",
+      "bytes": 5731,
+      "sha256": "e12560243856b46ebfd2179d7c3d1c378cffd05d356ee0ef2f72504cdd28d967"
+    },
+    {
+      "path": "src/spectra_inn/data/__init__.py",
+      "source_path": "src/spectra_inn/data/__init__.py",
+      "bytes": 204,
+      "sha256": "b97e3a3308de3cd1eac3d19d7b2094398ee66cf06a328fb01791e0c37ab15e21"
+    },
+    {
+      "path": "src/spectra_inn/data/dataset.py",
+      "source_path": "src/spectra_inn/data/dataset.py",
+      "bytes": 6121,
+      "sha256": "fa723598c0977c887b5d631d60b36c216df0d4d884342fa7725f34b7b54098b1"
+    },
+    {
+      "path": "src/spectra_inn/data/evaluation.py",
+      "source_path": "src/spectra_inn/data/evaluation.py",
+      "bytes": 3801,
+      "sha256": "e4e01ecbfec434f9e889af86d7587c00465a10e22aa91c339c9278d6a3fad1d2"
+    },
+    {
+      "path": "src/spectra_inn/data/manifest.py",
+      "source_path": "src/spectra_inn/data/manifest.py",
+      "bytes": 4248,
+      "sha256": "813f0aefc99a04c431edb9cb9c9004775285ff4946c393d1117d1bafca52cbe6"
+    },
+    {
+      "path": "src/spectra_inn/evaluate.py",
+      "source_path": "src/spectra_inn/evaluate.py",
+      "bytes": 8050,
+      "sha256": "dacb37307e832ad2acdb06980eee229526484a39d0c1299132b5a609f2885b44"
+    },
+    {
+      "path": "src/spectra_inn/experiments/__init__.py",
+      "source_path": "src/spectra_inn/experiments/__init__.py",
+      "bytes": 54,
+      "sha256": "c362f4622e2bcb5f1d3d29a479ec589c73da2f4c4c3d15f936c60d646d084d18"
+    },
+    {
+      "path": "src/spectra_inn/experiments/planning.py",
+      "source_path": "src/spectra_inn/experiments/planning.py",
+      "bytes": 4861,
+      "sha256": "8c4179b192752519ed4f6b9fda814c389357209f9c90476af7583eebad0a243a"
+    },
+    {
+      "path": "src/spectra_inn/experiments/runner.py",
+      "source_path": "src/spectra_inn/experiments/runner.py",
+      "bytes": 31928,
+      "sha256": "7a4725d3722cb9e073f2dd4a1b0a216359521cab1be40a59f22e8ca33fd0f1e4"
+    },
+    {
+      "path": "src/spectra_inn/losses/__init__.py",
+      "source_path": "src/spectra_inn/losses/__init__.py",
+      "bytes": 137,
+      "sha256": "a567230f9f07fbda07e05f9ea0b547e3f9c726ee996353d1377ecbebb3b25b16"
+    },
+    {
+      "path": "src/spectra_inn/losses/audio.py",
+      "source_path": "src/spectra_inn/losses/audio.py",
+      "bytes": 6294,
+      "sha256": "92aa7d25f91d46a55db2db350a3cf758b0f62ca1ac87e8e133fbf4ac3c0a8360"
+    },
+    {
+      "path": "src/spectra_inn/metrics/__init__.py",
+      "source_path": "src/spectra_inn/metrics/__init__.py",
+      "bytes": 151,
+      "sha256": "b9fd0742b56bec2fb891963f3dd90e55051581b4be99ccda1581d8b0c4bf0550"
+    },
+    {
+      "path": "src/spectra_inn/metrics/audio.py",
+      "source_path": "src/spectra_inn/metrics/audio.py",
+      "bytes": 904,
+      "sha256": "91480fd22a42aac931a90a425c8c778525f8725626ee20b9f160f213c30da72a"
+    },
+    {
+      "path": "src/spectra_inn/models/__init__.py",
+      "source_path": "src/spectra_inn/models/__init__.py",
+      "bytes": 127,
+      "sha256": "ac4103bc830e0a69e934bd26327c4c7627d8720a7e7593536880af3ab7da5b74"
+    },
+    {
+      "path": "src/spectra_inn/models/clean_inn.py",
+      "source_path": "src/spectra_inn/models/clean_inn.py",
+      "bytes": 6609,
+      "sha256": "cb4c5c286882e07a1aff1b65920a936c49cb00f9509f3a7b10ae1e2fe4b31e2e"
+    },
+    {
+      "path": "src/spectra_inn/models/coupling.py",
+      "source_path": "src/spectra_inn/models/coupling.py",
+      "bytes": 3210,
+      "sha256": "4bd436e874e9d3016103a910efd047e2cd857c961a90ecc4df6fd723db8129a4"
+    },
+    {
+      "path": "src/spectra_inn/models/redundancy.py",
+      "source_path": "src/spectra_inn/models/redundancy.py",
+      "bytes": 6751,
+      "sha256": "9b0f5049b83378961e09036cc29891afc607b083de56fcc58763338efec256f0"
+    },
+    {
+      "path": "src/spectra_inn/train.py",
+      "source_path": "src/spectra_inn/train.py",
+      "bytes": 25678,
+      "sha256": "afcba4513185c2b80b8692f5996846e642f75be2f686a02c3a39e2ffad197fe1"
+    },
+    {
+      "path": "src/spectra_inn/transforms/__init__.py",
+      "source_path": "src/spectra_inn/transforms/__init__.py",
+      "bytes": 130,
+      "sha256": "391c967c391c1ba37e0bc4dd9952b46b78423d9dbe2c8624a4540bf827642c8b"
+    },
+    {
+      "path": "src/spectra_inn/transforms/haar.py",
+      "source_path": "src/spectra_inn/transforms/haar.py",
+      "bytes": 1874,
+      "sha256": "c8879683f68e52724a0eb90ec67d8e6c49640e7bde364f03cf380a12cafd4d6a"
+    },
+    {
+      "path": "src/spectra_inn/utils/__init__.py",
+      "source_path": "src/spectra_inn/utils/__init__.py",
+      "bytes": 62,
+      "sha256": "050c2d7bdccd5a6cb98e6c1ff9b63a1e11c9a12ca46785fa42b9a4083648ae90"
+    },
+    {
+      "path": "src/spectra_inn/utils/seed.py",
+      "source_path": "src/spectra_inn/utils/seed.py",
+      "bytes": 539,
+      "sha256": "9acb1095f0b276a437c9ec77072148fb21fe0ef8b39270219de6aa306553cf41"
+    },
+    {
+      "path": "tests/test_4090_models.py",
+      "source_path": "tests/test_4090_models.py",
+      "bytes": 6044,
+      "sha256": "1aa0717cbfcd2c2351d8eec995f368a4a899a9ea19ff068144c8e89acd5b2931"
+    },
+    {
+      "path": "tests/test_4090_suite.py",
+      "source_path": "tests/test_4090_suite.py",
+      "bytes": 11927,
+      "sha256": "afb10aab09d1b16b608fa918f55763427cf79d1be1b5bd4b30648544c920d4d9"
+    },
+    {
+      "path": "tests/test_config.py",
+      "source_path": "tests/test_config.py",
+      "bytes": 653,
+      "sha256": "2c72822bb49fe6e4ad43df9acb2a5922cd9328f97ec927288b78865b30f1ad05"
+    },
+    {
+      "path": "tests/test_data.py",
+      "source_path": "tests/test_data.py",
+      "bytes": 2448,
+      "sha256": "646c652b300d0966dfe4e8f57cba56cb69431a5dd6c5c55700a78151dd70959c"
+    },
+    {
+      "path": "tests/test_evaluation_pairs.py",
+      "source_path": "tests/test_evaluation_pairs.py",
+      "bytes": 2977,
+      "sha256": "03e985ca40a5f3a3ef28c6117c6cfc44f903500dd502f78cdda1fcf9149df67d"
+    },
+    {
+      "path": "tests/test_haar.py",
+      "source_path": "tests/test_haar.py",
+      "bytes": 448,
+      "sha256": "d571794a8ebea0ccdbdd0f95de9f92d2be217669bd355d92217cc2f62bdba837"
+    },
+    {
+      "path": "tests/test_invertibility.py",
+      "source_path": "tests/test_invertibility.py",
+      "bytes": 1437,
+      "sha256": "e8182e7e8e3d14c2bc1007c1d4d0a12c902fd0613f115a3a4dbb7e07acf56dc6"
+    },
+    {
+      "path": "tests/test_losses.py",
+      "source_path": "tests/test_losses.py",
+      "bytes": 5022,
+      "sha256": "0f692255de2f5bad9205e62fe4b19fb8fd2cc1efb97549c049e18572d21b7e50"
+    },
+    {
+      "path": "tests/test_overfit.py",
+      "source_path": "tests/test_overfit.py",
+      "bytes": 5404,
+      "sha256": "3a7933f6d9f2a1bf1b5b3b5e4d1187a87de2396ea85b81130e938474e41f34cc"
+    },
+    {
+      "path": "tests/test_prepare_librispeech.py",
+      "source_path": "tests/test_prepare_librispeech.py",
+      "bytes": 9140,
+      "sha256": "5ff26d11aec7f6e7ff334fd4fd9a9c566d0f5a430b54869b04532bb09c56b74b"
+    },
+    {
+      "path": "tests/test_redundancy.py",
+      "source_path": "tests/test_redundancy.py",
+      "bytes": 8824,
+      "sha256": "433e96d5d8b9f7a97428222126f6fe03743e4ba0b7e782db66be932570f0c6e0"
+    },
+    {
+      "path": "tests/test_training_bundle.py",
+      "source_path": "tests/test_training_bundle.py",
+      "bytes": 4932,
+      "sha256": "74fa09092d10aca97ba1679b0a6ce2d42493f7f734fbac0a53f09d320daf56f3"
+    }
+  ]
+}

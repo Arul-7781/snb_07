@@ -5,7 +5,7 @@ from torch import nn
 
 
 class ResidualSubNet1d(nn.Module):
-    """Compact non-invertible conditioner used inside an invertible block."""
+    """Multi-scale dense conditioner used inside an invertible block."""
 
     def __init__(
         self,
@@ -13,16 +13,33 @@ class ResidualSubNet1d(nn.Module):
         hidden_channels: int,
         layers: int,
         kernel_size: int,
+        scales: int = 4,
     ) -> None:
         super().__init__()
         if kernel_size % 2 == 0:
             raise ValueError("kernel_size must be odd")
         if layers < 2:
             raise ValueError("layers must be at least two")
+        if scales < 1:
+            raise ValueError("scales must be positive")
 
         self.input = nn.Conv1d(channels, hidden_channels, kernel_size, padding=kernel_size // 2)
+        self.branches = nn.ModuleList()
+        for index in range(scales):
+            dilation = 2**index
+            padding = dilation * (kernel_size // 2)
+            self.branches.append(
+                nn.Conv1d(
+                    hidden_channels,
+                    hidden_channels,
+                    kernel_size,
+                    padding=padding,
+                    dilation=dilation,
+                )
+            )
+        self.fuse = nn.Conv1d(hidden_channels * scales, hidden_channels, 1)
         self.blocks = nn.ModuleList()
-        for index in range(layers - 2):
+        for index in range(max(0, layers - 2)):
             dilation = 2 ** (index % 4)
             padding = dilation * (kernel_size // 2)
             self.blocks.append(
@@ -48,6 +65,7 @@ class ResidualSubNet1d(nn.Module):
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         hidden = self.input(inputs)
+        hidden = self.fuse(torch.cat([branch(hidden) for branch in self.branches], dim=1))
         for block in self.blocks:
             hidden = hidden + block(hidden)
         return self.output(hidden)
@@ -63,6 +81,7 @@ class AffineCouplingBlock1d(nn.Module):
         subnet_layers: int,
         clamp: float,
         kernel_size: int,
+        subnet_scales: int = 4,
     ) -> None:
         super().__init__()
         self.clamp = float(clamp)
@@ -71,6 +90,7 @@ class AffineCouplingBlock1d(nn.Module):
             "hidden_channels": hidden_channels,
             "layers": subnet_layers,
             "kernel_size": kernel_size,
+            "scales": subnet_scales,
         }
         self.phi = ResidualSubNet1d(**kwargs)
         self.rho = ResidualSubNet1d(**kwargs)

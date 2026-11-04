@@ -1,0 +1,50 @@
+experiment:
+  name: baseline_16k_clean
+  seed: 3407
+  output_dir: runs/baseline_16k_clean
+
+data:
+  manifest: data/manifests/all.jsonl
+  sample_rate: 16000
+  channels: 1
+  segment_seconds: 2.0
+  train_split: train
+  val_split: val
+  min_rms: 0.003
+  random_gain_db: 3.0
+  num_workers: 4
+  pin_memory: true
+
+model:
+  wavelet_levels: 3
+  num_blocks: 8
+  hidden_channels: 64
+  subnet_layers: 4
+  clamp: 1.5
+  kernel_size: 3
+
+loss:
+  stego_time: 2.0
+  stego_stft: 1.0
+  secret_time: 1.0
+  secret_stft: 1.0
+  recovered_cover: 0.25
+  latent_prior: 0.1
+  scale_stability: 0.001
+  stft_windows: [256, 512, 1024, 2048]
+
+training:
+  batch_size: 4
+  accumulation_steps: 4
+  max_steps: 200000
+  max_hours: null
+  learning_rate: 0.0001
+  weight_decay: 0.000001
+  grad_clip_norm: 5.0
+  amp: true
+  log_every: 25
+  validate_every: 1000
+  checkpoint_every: 5000
+  validation_batches: 20
+  keep_checkpoints: 3
+  resume: null

@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import torch
+import torch.nn.functional as F
 import yaml
 from torch import nn
 from torch.optim import AdamW
@@ -131,14 +132,59 @@ def to_device(
     )
 
 
+def augment_stego_channel(stego: torch.Tensor, config: dict[str, Any]) -> torch.Tensor:
+    """Apply mild differentiable channel corruption before blind decoding."""
+    if float(config["training"].get("channel_augment_probability", 0.0)) <= 0.0:
+        return stego
+    if torch.rand((), device=stego.device) > float(
+        config["training"].get("channel_augment_probability", 0.0)
+    ):
+        return stego
+
+    output = stego
+    noise_std = float(config["training"].get("channel_noise_std", 0.0))
+    if noise_std > 0.0:
+        output = output + torch.randn_like(output) * noise_std
+
+    speckle_std = float(config["training"].get("channel_speckle_std", 0.0))
+    if speckle_std > 0.0:
+        output = output + output * torch.randn_like(output) * speckle_std
+
+    resample_probability = float(config["training"].get("channel_resample_probability", 0.0))
+    if resample_probability > 0.0 and torch.rand((), device=stego.device) < resample_probability:
+        minimum = float(config["training"].get("channel_resample_min", 0.9))
+        maximum = float(config["training"].get("channel_resample_max", 1.1))
+        factor = float(torch.empty((), device=stego.device).uniform_(minimum, maximum))
+        intermediate_size = max(2, int(round(output.shape[-1] / factor)))
+        output = F.interpolate(output, size=intermediate_size, mode="linear", align_corners=False)
+        output = F.interpolate(output, size=stego.shape[-1], mode="linear", align_corners=False)
+
+    return output
+
+
 def compute_batch(
     model: CleanAudioINN,
     objective: StageOneLoss,
     cover: torch.Tensor,
     secret: torch.Tensor,
+    predicted_fraction: float = 1.0,
+    channel_augment: bool = False,
+    config: dict[str, Any] | None = None,
 ) -> tuple[torch.Tensor, dict[str, torch.Tensor], dict[str, torch.Tensor]]:
     stego, residual, diagnostics = model(cover, secret)
-    recovered_cover, recovered_secret, _ = model.decode(stego)
+    if model.predictor is not None:
+        if channel_augment and config is None:
+            raise ValueError("channel augmentation requires the training config")
+        decode_stego = augment_stego_channel(stego, config) if channel_augment else stego
+        predicted_cover, predicted_secret, predicted_residual = model.predicted_inverse(
+            decode_stego
+        )
+        oracle_cover, oracle_secret = model.inverse(stego, residual)
+        predicted_fraction = float(max(0.0, min(1.0, predicted_fraction)))
+        recovered_cover = torch.lerp(oracle_cover, predicted_cover, predicted_fraction)
+        recovered_secret = torch.lerp(oracle_secret, predicted_secret, predicted_fraction)
+    else:
+        recovered_cover, recovered_secret, predicted_residual = model.decode(stego)
     total, components = objective(
         cover=cover,
         secret=secret,
@@ -147,6 +193,7 @@ def compute_batch(
         recovered_cover=recovered_cover,
         recovered_secret=recovered_secret,
         diagnostics=diagnostics,
+        predicted_residual=predicted_residual if model.predictor is not None else None,
     )
     metrics = {
         "cover_snr_db": snr_db(cover, stego),
@@ -184,7 +231,7 @@ def latent_comparison(
         "secret_snr_db_true_residual": snr_db(secret, oracle_secret),
     }
     if model.predictor is not None:
-        _, predicted_secret, predicted = model.predicted_inverse(stego)
+        _, predicted_secret, predicted = model.decode(stego)
         values["secret_snr_db_predicted"] = snr_db(secret, predicted_secret)
         values["latent_prediction_snr_db"] = snr_db(residual, predicted)
     return values
@@ -318,12 +365,29 @@ def main() -> None:
     model = CleanAudioINN.from_config(config).to(device)
     objective = StageOneLoss(config).to(device)
     optimizer = AdamW(
-        model.parameters(),
-        lr=float(training["learning_rate"]),
+        [
+            {
+                "params": [
+                    parameter
+                    for name, parameter in model.named_parameters()
+                    if not name.startswith("predictor.")
+                ],
+                "lr": float(training["learning_rate"]),
+            },
+            {
+                "params": list(model.predictor.parameters()) if model.predictor is not None else [],
+                "lr": float(training.get("predictor_learning_rate", training["learning_rate"])),
+            },
+        ],
         weight_decay=float(training["weight_decay"]),
     )
     amp = bool(training["amp"]) and device.type == "cuda"
-    scaler = torch.amp.GradScaler(device.type, enabled=amp)
+    amp_dtype_name = str(training.get("amp_dtype", "float16")).lower()
+    amp_dtype = torch.bfloat16 if amp_dtype_name == "bfloat16" else torch.float16
+    scaler = torch.amp.GradScaler(
+        device.type,
+        enabled=amp and amp_dtype is torch.float16,
+    )
     train_loader, val_loader = create_loaders(config, args.smoke)
     write_run_metadata(output_dir, config, model, device)
     writer = SummaryWriter(log_dir=str(output_dir / "tensorboard"))
@@ -342,6 +406,9 @@ def main() -> None:
     log_every = int(training["log_every"])
     validate_every = int(training["validate_every"])
     checkpoint_every = int(training["checkpoint_every"])
+    oracle_warmup_steps = int(training.get("oracle_warmup_steps", 0))
+    nonfinite_batches = 0
+    max_nonfinite_batches = int(training.get("max_nonfinite_batches", 5))
     batches = infinite_batches(train_loader)
     optimizer.zero_grad(set_to_none=True)
     model.train()
@@ -354,14 +421,39 @@ def main() -> None:
         last_metrics: dict[str, torch.Tensor] = {}
         last_cover: torch.Tensor | None = None
         last_secret: torch.Tensor | None = None
+        invalid_accumulation = False
 
         for _ in range(accumulation_steps):
             cover, secret = to_device(next(batches), device)
-            with torch.autocast(device_type=device.type, dtype=torch.float16, enabled=amp):
-                total, components, metrics = compute_batch(model, objective, cover, secret)
+            with torch.autocast(device_type=device.type, dtype=amp_dtype, enabled=amp):
+                total, components, metrics = compute_batch(
+                    model,
+                    objective,
+                    cover,
+                    secret,
+                    predicted_fraction=(
+                        1.0
+                        if oracle_warmup_steps <= 0
+                        else min(1.0, float(step + 1) / oracle_warmup_steps)
+                    ),
+                    channel_augment=True,
+                    config=config,
+                )
                 scaled_loss = total / accumulation_steps
             if not torch.isfinite(total):
-                raise FloatingPointError(f"Non-finite loss at step {step + 1}: {float(total)}")
+                nonfinite_batches += 1
+                optimizer.zero_grad(set_to_none=True)
+                print(
+                    f"\nSkipping non-finite batch {nonfinite_batches}/"
+                    f"{max_nonfinite_batches} before step {step + 1}."
+                )
+                if nonfinite_batches > max_nonfinite_batches:
+                    raise FloatingPointError(
+                        f"Non-finite loss persisted before step {step + 1}: "
+                        f"{float(total.detach())}"
+                    )
+                invalid_accumulation = True
+                break
             scaler.scale(scaled_loss).backward()
             aggregate_total += float(total.detach().float().cpu()) / accumulation_steps
             last_components = components
@@ -369,13 +461,27 @@ def main() -> None:
             last_cover = cover
             last_secret = secret
 
+        if invalid_accumulation:
+            continue
+
         scaler.unscale_(optimizer)
         gradient_norm = torch.nn.utils.clip_grad_norm_(
             model.parameters(), float(training["grad_clip_norm"])
         )
+        if not torch.isfinite(gradient_norm):
+            nonfinite_batches += 1
+            optimizer.zero_grad(set_to_none=True)
+            print(
+                f"\nSkipping non-finite gradient {nonfinite_batches}/"
+                f"{max_nonfinite_batches} before step {step + 1}."
+            )
+            if nonfinite_batches > max_nonfinite_batches:
+                raise FloatingPointError(f"Non-finite gradient persisted before step {step + 1}")
+            continue
         scaler.step(optimizer)
         scaler.update()
         optimizer.zero_grad(set_to_none=True)
+        nonfinite_batches = 0
         step += 1
         progress.update(1)
         time_limit_reached = deadline is not None and time.perf_counter() >= deadline

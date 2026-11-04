@@ -73,6 +73,7 @@ class StageOneLoss(nn.Module):
             "secret_stft": float(loss["secret_stft"]),
             "recovered_cover": float(loss["recovered_cover"]),
             "latent_prior": float(loss["latent_prior"]),
+            "latent_prediction": float(loss.get("latent_prediction", 0.0)),
             "scale_stability": float(loss["scale_stability"]),
         }
         self.stft_windows = tuple(int(value) for value in loss["stft_windows"])
@@ -86,7 +87,13 @@ class StageOneLoss(nn.Module):
         recovered_cover: torch.Tensor,
         recovered_secret: torch.Tensor,
         diagnostics: dict[str, torch.Tensor],
+        predicted_residual: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+        latent_prediction = residual.new_zeros(())
+        if self.weights["latent_prediction"] > 0.0:
+            if predicted_residual is None:
+                raise ValueError("latent_prediction loss requires a predicted residual")
+            latent_prediction = charbonnier(residual.detach(), predicted_residual)
         components = {
             "stego_time": charbonnier(cover, stego),
             "stego_stft": multi_resolution_stft_loss(cover, stego, self.stft_windows),
@@ -94,6 +101,7 @@ class StageOneLoss(nn.Module):
             "secret_stft": multi_resolution_stft_loss(secret, recovered_secret, self.stft_windows),
             "recovered_cover": charbonnier(cover, recovered_cover),
             "latent_prior": latent_prior_loss(residual),
+            "latent_prediction": latent_prediction,
             "scale_stability": diagnostics["mean_abs_log_scale"],
         }
         total = sum(self.weights[name] * value for name, value in components.items())

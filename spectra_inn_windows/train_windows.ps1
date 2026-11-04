@@ -16,6 +16,7 @@ param(
     [switch]$SkipDownload,
     [switch]$SkipTests,
     [switch]$SkipSmoke,
+    [switch]$FullLibriSpeech,
     [switch]$SetupOnly
 )
 
@@ -69,11 +70,19 @@ function Get-VerifiedDownload {
         Remove-Item -Force $Destination
     }
 
-    Write-Host "`nDownloading $Url" -ForegroundColor Cyan
-    if (Get-Command "Start-BitsTransfer" -ErrorAction SilentlyContinue) {
-        Start-BitsTransfer -Source $Url -Destination $Destination -DisplayName "SPECTRA-INN dataset"
-    } else {
-        Invoke-WebRequest -Uri $Url -OutFile $Destination -UseBasicParsing
+    $Aria2 = Get-Command "aria2c" -ErrorAction SilentlyContinue
+    if (-not $Aria2) {
+        throw "aria2c is required for dataset downloads. Install it with: winget install --id aria2.aria2 -e"
+    }
+
+    Write-Host "`nDownloading $Url with aria2c" -ForegroundColor Cyan
+    & $Aria2.Source `
+        "-x", "16", "-s", "16", "-k", "1M", `
+        "--file-allocation=none", "--allow-overwrite=true", `
+        "--auto-file-renaming=false", "-d", (Split-Path $Destination -Parent), `
+        "-o", (Split-Path $Destination -Leaf), $Url
+    if ($LASTEXITCODE -ne 0) {
+        throw "aria2c failed with exit code $LASTEXITCODE while downloading $Url"
     }
 
     $ActualMd5 = (Get-FileHash -Path $Destination -Algorithm MD5).Hash.ToLowerInvariant()
@@ -200,67 +209,57 @@ if ([string]::IsNullOrWhiteSpace($AudioRoot)) {
     $DownloadDirectory = Join-Path $ResolvedDataDirectory "downloads"
     New-Item -ItemType Directory -Force -Path $DownloadDirectory | Out-Null
 
-    $TrainArchive = Join-Path $DownloadDirectory "train-clean-100.tar.gz"
-    $DevArchive = Join-Path $DownloadDirectory "dev-clean.tar.gz"
-    $TestArchive = Join-Path $DownloadDirectory "test-clean.tar.gz"
+    $LibriSpeechRoot = Join-Path $ResolvedDataDirectory "LibriSpeech"
+    New-Item -ItemType Directory -Force -Path $LibriSpeechRoot | Out-Null
+
+    if ($FullLibriSpeech) {
+        $DatasetSpecs = @(
+            @{ Name = "train-clean-100"; Split = "train"; Source = "librispeech_train_clean_100"; Md5 = "2a93770f6d5c6c964bc36631d331a522" },
+            @{ Name = "train-clean-360"; Split = "train"; Source = "librispeech_train_clean_360"; Md5 = "c0e676e450a7ff2f54aeade5171606fa" },
+            @{ Name = "train-other-500"; Split = "train"; Source = "librispeech_train_other_500"; Md5 = "d1a0fd59409feb2c614ce4d30c387708" },
+            @{ Name = "dev-clean"; Split = "val"; Source = "librispeech_dev_clean"; Md5 = "42e2234ba48799c1f50f24a7926300a1" },
+            @{ Name = "dev-other"; Split = "val"; Source = "librispeech_dev_other"; Md5 = "c8d0bcc9cca99d4f8b62fcc847357931" },
+            @{ Name = "test-clean"; Split = "test"; Source = "librispeech_test_clean"; Md5 = "32fa31d27d2e1cad72775fee3f4849a9" },
+            @{ Name = "test-other"; Split = "test"; Source = "librispeech_test_other"; Md5 = "fb5a50374b501bb3bac4815ee91d3135" }
+        )
+    } else {
+        $DatasetSpecs = @(
+            @{ Name = "train-clean-360"; Split = "train"; Source = "librispeech_train_clean_360"; Md5 = "c0e676e450a7ff2f54aeade5171606fa" },
+            @{ Name = "dev-clean"; Split = "val"; Source = "librispeech_dev_clean"; Md5 = "42e2234ba48799c1f50f24a7926300a1" },
+            @{ Name = "test-clean"; Split = "test"; Source = "librispeech_test_clean"; Md5 = "32fa31d27d2e1cad72775fee3f4849a9" }
+        )
+    }
 
     if (-not $SkipDownload) {
         Write-Host "`nUsing LibriSpeech under CC BY 4.0 from OpenSLR SLR12." -ForegroundColor Green
-        Get-VerifiedDownload `
-            -Url "https://www.openslr.org/resources/12/train-clean-100.tar.gz" `
-            -Destination $TrainArchive `
-            -ExpectedMd5 "2a93770f6d5c6c964bc36631d331a522"
-        Get-VerifiedDownload `
-            -Url "https://www.openslr.org/resources/12/dev-clean.tar.gz" `
-            -Destination $DevArchive `
-            -ExpectedMd5 "42e2234ba48799c1f50f24a7926300a1"
-        Get-VerifiedDownload `
-            -Url "https://www.openslr.org/resources/12/test-clean.tar.gz" `
-            -Destination $TestArchive `
-            -ExpectedMd5 "32fa31d27d2e1cad72775fee3f4849a9"
+        foreach ($Spec in $DatasetSpecs) {
+            Get-VerifiedDownload `
+                -Url "https://www.openslr.org/resources/12/$($Spec.Name).tar.gz" `
+                -Destination (Join-Path $DownloadDirectory "$($Spec.Name).tar.gz") `
+                -ExpectedMd5 $Spec.Md5
+        }
     }
 
-    $LibriSpeechRoot = Join-Path $ResolvedDataDirectory "LibriSpeech"
-    $TrainRoot = Join-Path $LibriSpeechRoot "train-clean-100"
-    $DevRoot = Join-Path $LibriSpeechRoot "dev-clean"
-    $TestRoot = Join-Path $LibriSpeechRoot "test-clean"
-
-    Expand-TarGzIfMissing `
-        -ArchivePath $TrainArchive `
-        -ExpectedRoot $TrainRoot `
-        -DestinationRoot $ResolvedDataDirectory
-    Expand-TarGzIfMissing `
-        -ArchivePath $DevArchive `
-        -ExpectedRoot $DevRoot `
-        -DestinationRoot $ResolvedDataDirectory
-    Expand-TarGzIfMissing `
-        -ArchivePath $TestArchive `
-        -ExpectedRoot $TestRoot `
-        -DestinationRoot $ResolvedDataDirectory
-
-    Invoke-Checked -Executable $PythonExe -Arguments @(
-        "-m", "spectra_inn.data.manifest",
-        "--root", $TrainRoot,
-        "--output", $ResolvedManifest,
-        "--split", "train",
-        "--source", "librispeech_train_clean_100"
-    )
-    Invoke-Checked -Executable $PythonExe -Arguments @(
-        "-m", "spectra_inn.data.manifest",
-        "--root", $DevRoot,
-        "--output", $ResolvedManifest,
-        "--split", "val",
-        "--append",
-        "--source", "librispeech_dev_clean"
-    )
-    Invoke-Checked -Executable $PythonExe -Arguments @(
-        "-m", "spectra_inn.data.manifest",
-        "--root", $TestRoot,
-        "--output", $ResolvedManifest,
-        "--split", "test",
-        "--append",
-        "--source", "librispeech_test_clean"
-    )
+    Remove-Item -Force $ResolvedManifest -ErrorAction SilentlyContinue
+    $FirstManifest = $true
+    foreach ($Spec in $DatasetSpecs) {
+        $ManifestArguments = @(
+            "-m", "spectra_inn.data.manifest",
+            "--root", (Join-Path $LibriSpeechRoot $Spec.Name),
+            "--output", $ResolvedManifest,
+            "--split", $Spec.Split,
+            "--source", $Spec.Source
+        )
+        Expand-TarGzIfMissing `
+            -ArchivePath (Join-Path $DownloadDirectory "$($Spec.Name).tar.gz") `
+            -ExpectedRoot (Join-Path $LibriSpeechRoot $Spec.Name) `
+            -DestinationRoot $ResolvedDataDirectory
+        if (-not $FirstManifest) {
+            $ManifestArguments += "--append"
+        }
+        Invoke-Checked -Executable $PythonExe -Arguments $ManifestArguments
+        $FirstManifest = $false
+    }
 } else {
     $ResolvedAudioRoot = (Resolve-Path $AudioRoot).Path
     if (-not (Test-Path $ResolvedAudioRoot -PathType Container)) {

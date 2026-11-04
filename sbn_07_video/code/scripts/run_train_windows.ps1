@@ -81,22 +81,10 @@ if ([string]::IsNullOrWhiteSpace($VimeoRoot)) {
     $VimeoRoot = Join-Path $CodeDir "vimeo90k"
 }
 
-$NeedDataSetup = $SetupData.IsPresent
-$ExpectedData = @(
-    (Join-Path $VimeoRoot "sequences"),
-    (Join-Path $VimeoRoot "sep_trainlist.txt"),
-    (Join-Path $VimeoRoot "sep_testlist.txt"),
-    (Join-Path $VimeoRoot "sep_testlist_7video.txt")
-)
-foreach ($Path in $ExpectedData) {
-    if (-not (Test-Path $Path)) {
-        $NeedDataSetup = $true
-    }
-}
-
-if ($NeedDataSetup) {
-    Write-Host "Preparing Vimeo-90K septuplet dataset..."
-    & (Join-Path $ScriptDir "setup_vimeo90k_septuplet_windows.ps1") -VimeoRoot $VimeoRoot -NumValPairs $NumValPairs -PythonExe $PythonExe
+Write-Host "Verifying Vimeo-90K septuplet dataset..."
+& (Join-Path $ScriptDir "setup_vimeo90k_septuplet_windows.ps1") -VimeoRoot $VimeoRoot -NumValPairs $NumValPairs -PythonExe $PythonExe
+if ($LASTEXITCODE -ne 0) {
+    throw "Vimeo-90K setup or integrity verification failed; training was not started."
 }
 
 $ConfigName = (& $PythonExe -c "import sys,yaml; c=yaml.safe_load(open(sys.argv[1],'r',encoding='utf-8')); print(c['name'])" $ConfigPath).Trim()

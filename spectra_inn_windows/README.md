@@ -17,7 +17,7 @@ It does not yet claim codec robustness, progressive codec payloads, exact blind 
 
 Open PowerShell in the project directory. The launcher creates the Python 3.11 environment, installs
 CUDA PyTorch and project dependencies, checks the NVIDIA driver and FFmpeg, runs tests and a GPU
-smoke train, downloads and verifies LibriSpeech `train-clean-100`, `dev-clean`, and `test-clean`,
+smoke train, downloads and verifies LibriSpeech `train-clean-360`, `dev-clean`, and `test-clean`,
 builds the official-split manifest, and starts a wall-clock-limited training run:
 
 ```powershell
@@ -35,6 +35,14 @@ Use `-SetupOnly` to stop after environment verification, `-MaxSteps 1000` for a 
 run, `-TrainingHours 20` to set the wall-clock budget, or
 `-Resume "runs\one_day_librispeech\checkpoints\step_00005000.pt"` to resume. Supplying
 `-AudioRoot "D:\my_audio"` bypasses automatic dataset download and uses local audio instead.
+
+The default download uses `train-clean-360`, `dev-clean`, and `test-clean`. To use the full
+LibriSpeech corpus (train-clean-100, train-clean-360, train-other-500, dev-clean, dev-other,
+test-clean, and test-other), add `-FullLibriSpeech`. This downloads the larger OpenSLR FLAC
+archives, verifies their MD5 checksums, and preserves the official train/validation/test splits.
+
+Dataset downloads require `aria2c` for parallel segmented downloads. Install it with
+`winget install --id aria2.aria2 -e` before running the launcher.
 
 ## Trial 2: predicted latent (LF-VSN RPM)
 
